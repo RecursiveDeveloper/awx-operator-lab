@@ -1,0 +1,17 @@
+# awx-operator cloned directory
+awx-operator/
+
+# Editors
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Scripts output / artifacts
+*.tmp
