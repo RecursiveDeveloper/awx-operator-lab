@@ -79,6 +79,8 @@ To deploy this project from the project root, follow these steps:
 
    Then open `http://localhost:5000` in your browser and log in with the user `admin` and the password printed by the deploy script.
 
+   > **Note:** Even after all pods reach the `Running` state, the AWX Web UI may take **up to 10 minutes** to be fully ready to receive requests. This depends on the cluster resources and underlying hardware. If the UI is unresponsive or shows errors shortly after deployment, wait a few minutes and try again.
+
 4. **To tear down the environment (AWX resources and cloned operator directory):**
 
    ```bash
