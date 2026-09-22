@@ -6,7 +6,8 @@ if [ -d awx-operator ]; then
   cd awx-operator
   echo -e "\nRemoving awx-operator resources from cluster...\n"
   K8S="microk8s kubectl"
-  $K8S delete -k . --ignore-not-found=true
+  $K8S delete -f awx-demo.yml --ignore-not-found=true --wait=true --timeout=5m
+  $K8S delete -k . --ignore-not-found=true --wait=true --timeout=5m
   
   cd ..
   echo -e "\nRemoving awx-operator directory...\n"
