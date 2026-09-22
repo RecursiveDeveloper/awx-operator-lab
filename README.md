@@ -29,7 +29,7 @@ awx-operator-lab/
 
 Before deploying this project, ensure you have the following prerequisites in place:
 
-1. **A MicroK8s cluster** running with the following addons enabled:
+1. **A [MicroK8s](https://microk8s.io/docs/getting-started) cluster** running with the following addons enabled:
 
    - `microk8s enable dns`
    - `microk8s enable ingress`
