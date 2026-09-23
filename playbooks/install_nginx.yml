@@ -36,10 +36,15 @@
         enabled: true
       when: systemd_check.rc == 0
 
+    - name: Check if nginx is already running
+      ansible.builtin.command:
+        cmd: pgrep -x nginx
+      register: nginx_running
+      failed_when: false
+      changed_when: false
+      when: systemd_check.rc != 0
+
     - name: Start nginx directly (no systemd in container)
       ansible.builtin.command:
         cmd: nginx
-      when: systemd_check.rc != 0
-      register: nginx_start
-      failed_when: nginx_start.rc != 0 and 'already running' not in nginx_start.stderr
-      changed_when: nginx_start.rc == 0
+      when: systemd_check.rc != 0 and nginx_running.rc != 0
