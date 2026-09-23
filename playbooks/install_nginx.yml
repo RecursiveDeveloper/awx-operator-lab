@@ -22,14 +22,14 @@
         state: present
       when: ansible_os_family == "RedHat"
 
-    - name: Check if nginx is already running
+    - name: Check if port 80 is already in use
       ansible.builtin.command:
-        cmd: pgrep -x nginx
-      register: nginx_running
+        cmd: ss -tlnp sport = :80
+      register: port_check
       failed_when: false
       changed_when: false
 
     - name: Start nginx
       ansible.builtin.command:
         cmd: nginx
-      when: nginx_running.rc != 0
+      when: port_check.stdout == ""
