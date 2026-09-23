@@ -14,7 +14,16 @@ awx-operator-lab/
 ├── deploy-awx-operator.sh       # Clones the operator, applies kustomization and prints AWX access info
 ├── destroy-awx-operator.sh      # Removes operator resources and the cloned directory
 ├── kustomization.yaml           # Declares the AWX Operator resources and the AWX CR
-└── awx-demo.yml                 # AWX custom resource (nodeport service type)
+├── awx-demo.yml                 # AWX custom resource (nodeport service type)
+├── workers/                     # Docker Compose stack with target containers for AWX
+│   ├── docker-compose.yml       # Defines fedora, ubuntu and debian worker services
+│   ├── deploy_services.sh       # Generates SSH key pair and starts the containers
+│   ├── destroy_services.sh      # Stops and removes the containers and generated keys
+│   ├── fedora/Dockerfile
+│   ├── ubuntu/Dockerfile
+│   └── debian/Dockerfile
+└── playbooks/                   # Sample Ansible playbooks to run against the worker containers
+    └── install_nginx.yml        # Prints container hostname and installs nginx on each target
 ```
 
 ## Tech Stack
@@ -23,7 +32,8 @@ awx-operator-lab/
 - **Operator:** AWX Operator v2.19.1
 - **Manifest tooling:** Kustomize
 - **Automation server:** AWX
-- **Tools:** Bash, kubectl
+- **Target containers:** Fedora, Ubuntu, Debian (via Docker Compose)
+- **Tools:** Bash, kubectl, Docker
 
 ## Prerequisites
 
@@ -44,48 +54,102 @@ Before deploying this project, ensure you have the following prerequisites in pl
 
    The `deploy-awx-operator.sh` script clones the AWX Operator repository, so git must be available on the machine.
 
+## Workers
+
+The `workers/` folder contains a Docker Compose stack that spins up three containers — **Fedora**, **Ubuntu**, and **Debian** — each running an SSH server. These containers act as the target hosts that AWX will manage and run playbooks against.
+
+Each container has its own OS user (`fedora`, `ubuntu`, `debian`) with passwordless sudo, and SSH access is granted via a key pair generated at deploy time.
+
+**Start the worker containers:**
+
+```bash
+cd workers
+bash deploy_services.sh
+```
+
+This script generates an RSA key pair (`rsa_lab` / `rsa_lab.pub`), then starts the containers via Docker Compose. The public key is bind-mounted into each container's `authorized_keys`, and the private key (`rsa_lab`) is the one you register in AWX as a Machine credential.
+
+**Stop and remove the containers:**
+
+```bash
+bash destroy_services.sh
+```
+
+## Playbooks
+
+The `playbooks/` folder contains sample playbooks meant to be imported into AWX and executed against the worker containers.
+
+| Playbook | Description |
+|---|---|
+| `install_nginx.yml` | Prints `Hello from container <hostname>` on each target, then installs and starts nginx. Handles both `apt` (Ubuntu/Debian) and `dnf` (Fedora) package managers automatically. |
+
 ## Deployment
 
-To deploy this project from the project root, follow these steps:
+Follow these steps in order to have a fully working lab:
 
-1. **Run the deploy script:**
+**1. Deploy AWX**
 
-   ```bash
-   bash deploy-awx-operator.sh
-   ```
+```bash
+bash deploy-awx-operator.sh
+```
 
-   This script performs:
+This script clones the AWX Operator repository (tag `2.19.1`), copies `awx-demo.yml` and `kustomization.yaml` into the operator directory, applies the kustomization, sets the namespace to `awx`, and prints the admin password once the stack is ready.
 
-   - Cloning of the AWX Operator repository (tag `2.19.1`)
-   - Copying of `awx-demo.yml` and `kustomization.yaml` into the operator directory
-   - Application of the kustomization with `microk8s kubectl apply -k .`
-   - Setting of the current context namespace to `awx`
-   - Waiting for the `awx-demo-admin-password` secret to be created
-   - Printing of the admin password
+Wait for the pods to reach `Running` state:
 
-2. **Wait for the AWX instance to become ready:**
+```bash
+microk8s kubectl get pods -n awx --watch
+```
 
-   ```bash
-   microk8s kubectl get pods -n awx --watch
-   ```
+Then access the AWX Web UI via port-forward:
 
-   Wait until the `awx-demo-*` pods reach the `Running` state.
+```bash
+microk8s kubectl port-forward svc/awx-demo-service 5000:80
+```
 
-3. **Access the AWX Web UI via port-forward:**
+Open `http://localhost:5000` and log in with user `admin` and the password printed by the deploy script.
 
-   ```bash
-   microk8s kubectl port-forward svc/awx-demo-service 5000:80
-   ```
+> **Note:** The AWX Web UI may take **up to 10 minutes** to be fully ready after pods are running, depending on cluster resources.
 
-   Then open `http://localhost:5000` in your browser and log in with the user `admin` and the password printed by the deploy script.
+**2. Start the worker containers**
 
-   > **Note:** Even after all pods reach the `Running` state, the AWX Web UI may take **up to 10 minutes** to be fully ready to receive requests. This depends on the cluster resources and underlying hardware. If the UI is unresponsive or shows errors shortly after deployment, wait a few minutes and try again.
+```bash
+cd workers
+bash deploy_services.sh
+```
 
-4. **To tear down the environment (AWX resources and cloned operator directory):**
+This generates an RSA key pair and starts the Fedora, Ubuntu and Debian containers via Docker Compose. The private key (`rsa_lab`) is the one to register in AWX as a Machine credential.
 
-   ```bash
-   bash destroy-awx-operator.sh
-   ```
+**3. Configure AWX**
+
+- Add `workers/rsa_lab` as a **Machine credential** in AWX.
+- Create an **Inventory** and add each container as a host with the following variables:
+
+```yaml
+---
+ansible_host: <YOUR_HOST_IP>
+ansible_port: <CONTAINER_PORT>
+ansible_user: <CONTAINER_USER>
+ansible_connection: ssh
+```
+
+| Container | Port | User |
+|---|---|---|
+| fedora-server | 2201 | fedora |
+| ubuntu-server | 2202 | ubuntu |
+| debian-server | 2203 | debian |
+
+- Create a **Project** pointing to this repository and a **Job Template** using any playbook from the `playbooks/` folder.
+
+**4. Tear down**
+
+```bash
+# Remove AWX resources and cloned operator directory
+bash destroy-awx-operator.sh
+
+# Stop and remove worker containers
+cd workers && bash destroy_services.sh
+```
 
 If needed, you can customize the AWX deployment by modifying `awx-demo.yml` (for example, changing the `service_type` to `LoadBalancer` or `ClusterIP`).
 
