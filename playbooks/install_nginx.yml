@@ -22,14 +22,13 @@
         state: present
       when: ansible_os_family == "RedHat"
 
-    - name: Check if port 80 is already in use
+    - name: Check if nginx master process is running
       ansible.builtin.command:
-        cmd: ss -tlnp sport = :80
-      register: port_check
-      failed_when: false
+        cmd: ps aux
+      register: ps_output
       changed_when: false
 
     - name: Start nginx
       ansible.builtin.command:
         cmd: nginx
-      when: port_check.stdout == ""
+      when: "'nginx: master process' not in ps_output.stdout"

@@ -1,7 +1,7 @@
 FROM ubuntu:latest
 
 RUN apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y openssh-server sudo && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y openssh-server sudo procps && \
     ssh-keygen -A && \
     echo 'ubuntu ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/ubuntu && \
     chmod 440 /etc/sudoers.d/ubuntu && \

@@ -1,7 +1,7 @@
 FROM debian:latest
 
 RUN apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y openssh-server sudo python3 && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y openssh-server sudo python3 procps && \
     ssh-keygen -A && \
     useradd -m -s /bin/bash debian && \
     echo 'debian ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/debian && \

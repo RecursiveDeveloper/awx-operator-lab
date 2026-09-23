@@ -1,6 +1,6 @@
 FROM fedora:latest
 
-RUN dnf install -y openssh-server sudo python3 python3-libdnf5 && \
+RUN dnf install -y openssh-server sudo python3 python3-libdnf5 procps-ng && \
     ssh-keygen -A && \
     useradd -m -s /bin/bash fedora && \
     echo 'fedora ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/fedora && \
