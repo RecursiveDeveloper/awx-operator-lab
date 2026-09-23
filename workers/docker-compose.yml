@@ -1,0 +1,43 @@
+services:
+  fedora:
+    build:
+      context: ./fedora
+    container_name: fedora-server
+    ports:
+      - "2201:22"
+    volumes:
+      - ./rsa_lab.pub:/home/fedora/.ssh/authorized_keys:ro
+    networks:
+      linux-network:
+        ipv4_address: 172.18.0.2
+
+  ubuntu:
+    build:
+      context: ./ubuntu
+    container_name: ubuntu-server
+    ports:
+      - "2202:22"
+    volumes:
+      - ./rsa_lab.pub:/home/ubuntu/.ssh/authorized_keys:ro
+    networks:
+      linux-network:
+        ipv4_address: 172.18.0.3
+
+  debian:
+    build:
+      context: ./debian
+    container_name: debian-server
+    ports:
+      - "2203:22"
+    volumes:
+      - ./rsa_lab.pub:/home/debian/.ssh/authorized_keys:ro
+    networks:
+      linux-network:
+        ipv4_address: 172.18.0.4
+
+networks:
+  linux-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.18.0.0/16

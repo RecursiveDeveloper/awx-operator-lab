@@ -1,0 +1,29 @@
+---
+- name: Install nginx on all worker containers
+  hosts: workers
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Print hello message with container hostname
+      ansible.builtin.debug:
+        msg: "Hello from container {{ ansible_hostname }}"
+
+    - name: Install nginx (Debian/Ubuntu)
+      ansible.builtin.apt:
+        name: nginx
+        state: present
+        update_cache: true
+      when: ansible_os_family == "Debian"
+
+    - name: Install nginx (Fedora)
+      ansible.builtin.dnf:
+        name: nginx
+        state: present
+      when: ansible_os_family == "RedHat"
+
+    - name: Ensure nginx is started and enabled
+      ansible.builtin.service:
+        name: nginx
+        state: started
+        enabled: true
