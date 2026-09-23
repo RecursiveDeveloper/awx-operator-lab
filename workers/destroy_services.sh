@@ -2,6 +2,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LAB_KEY_NAME="rsa_lab"
 cd "$SCRIPT_DIR"
 
 docker compose down --rmi all --volumes
