@@ -22,8 +22,24 @@
         state: present
       when: ansible_os_family == "RedHat"
 
-    - name: Ensure nginx is started and enabled
+    - name: Check if systemd is available
+      ansible.builtin.command:
+        cmd: systemctl is-system-running
+      register: systemd_check
+      failed_when: false
+      changed_when: false
+
+    - name: Ensure nginx is started and enabled (systemd)
       ansible.builtin.service:
         name: nginx
         state: started
         enabled: true
+      when: systemd_check.rc == 0
+
+    - name: Start nginx directly (no systemd in container)
+      ansible.builtin.command:
+        cmd: nginx
+      when: systemd_check.rc != 0
+      register: nginx_start
+      failed_when: nginx_start.rc != 0 and 'already running' not in nginx_start.stderr
+      changed_when: nginx_start.rc == 0
