@@ -1,6 +1,6 @@
 ---
 - name: Install nginx on all worker containers
-  hosts: workers
+  hosts: all
   become: true
   gather_facts: true
 
