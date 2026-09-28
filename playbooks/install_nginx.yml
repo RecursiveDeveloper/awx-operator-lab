@@ -3,6 +3,18 @@
   hosts: all
   become: true
   gather_facts: true
+  vars:
+    domain: "devops.com.co"
+    nginx_web_root: >-
+      {{ 
+        '/usr/share/nginx/html' if ansible_os_family == 'RedHat' 
+        else '/var/www/html' 
+      }}
+    nginx_conf_path: >-
+      {{ 
+        '/etc/nginx/conf.d' if ansible_os_family == 'RedHat' 
+        else '/etc/nginx/sites-available' 
+      }}
 
   tasks:
     - name: Print hello message with container hostname
@@ -32,18 +44,30 @@
       ansible.builtin.command:
         cmd: nginx
       when: "'nginx: master process' not in ps_output.stdout"
+      changed_when: false
     
-    - name: Set nginx web root path
-      ansible.builtin.set_fact:
-        nginx_web_root: "{{ '/usr/share/nginx/html' if ansible_os_family == 'RedHat' else '/var/www/html' }}"
-
     - name: Set index html page
-      ansible.builtin.copy:
-        src: files/index.html
-        owner: "{{ ansible_user_id }}"
-        group: "{{ ansible_user_id }}"
+      ansible.builtin.template:
+        src: templates/index.html.j2
+        owner: "{{ ansible_env['SUDO_USER'] }}"
+        group: "{{ ansible_env['SUDO_USER'] }}"
         mode: '0644'
         dest: "{{ nginx_web_root }}/index.html"
+
+    - name: Create nginx server block configuration
+      ansible.builtin.template:
+        src: templates/nginx.conf.j2
+        owner: "{{ ansible_env['SUDO_USER'] }}"
+        group: "{{ ansible_env['SUDO_USER'] }}"
+        mode: '0644'
+        dest: "{{ nginx_conf_path }}/devops.conf"
+
+    - name: Enable nginx server block (Debian/Ubuntu only)
+      ansible.builtin.file:
+        src: "{{ nginx_conf_path }}/devops.conf"
+        dest: "/etc/nginx/sites-enabled/devops.conf"
+        state: link
+      when: ansible_os_family == "Debian"
 
     - name: Reload nginx
       ansible.builtin.command:
