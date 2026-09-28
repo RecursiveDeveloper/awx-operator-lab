@@ -70,10 +70,9 @@
       when: ansible_os_family == "Debian"
 
     - name: Add domain to /etc/hosts
-      ansible.builtin.lineinfile:
-        path: /etc/hosts
-        line: "127.0.0.1  {{ domain }} www.{{ domain }}"
-        state: present
+      ansible.builtin.shell: |
+        grep -qF "{{ domain }}" /etc/hosts || echo "127.0.0.1  {{ domain }} www.{{ domain }}" >> /etc/hosts
+      changed_when: false
 
     - name: Reload nginx
       ansible.builtin.command:
