@@ -69,6 +69,12 @@
         state: link
       when: ansible_os_family == "Debian"
 
+    - name: Add domain to /etc/hosts
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        line: "127.0.0.1  {{ domain }} www.{{ domain }}"
+        state: present
+
     - name: Reload nginx
       ansible.builtin.command:
         cmd: nginx -s reload
