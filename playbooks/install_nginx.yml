@@ -32,3 +32,20 @@
       ansible.builtin.command:
         cmd: nginx
       when: "'nginx: master process' not in ps_output.stdout"
+    
+    - name: Set nginx web root path
+      ansible.builtin.set_fact:
+        nginx_web_root: "{{ '/usr/share/nginx/html' if ansible_os_family == 'RedHat' else '/var/www/html' }}"
+
+    - name: Set index html page
+      ansible.builtin.copy:
+        src: files/index.html
+        owner: "{{ ansible_user_id }}"
+        group: "{{ ansible_user_id }}"
+        mode: '0644'
+        dest: "{{ nginx_web_root }}/index.html"
+
+    - name: Reload nginx
+      ansible.builtin.command:
+        cmd: nginx -s reload
+      changed_when: false
